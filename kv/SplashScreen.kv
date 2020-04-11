@@ -7,9 +7,16 @@
             pos: self.pos
             size: self.size
 
-    BoxLayout:
-        orientation: "vertical"
-        Image:
-            id: imageView
-            source: "./assets/load.gif"
-            allow_stretch: False
+    anim_box: anim_box
+    AnchorLayout:
+        id: anim_box
+
+<AnimWidget@Widget>:
+    canvas:
+        Color:
+            rgba: 0.7, 0.3, 0.9, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    size_hint: None, None
+    size: 400, 30
