@@ -1,9 +1,10 @@
 import os
 import sys
 import threading
+import certifi
 
-import requests
-import asyncio
+
+
 import urllib, json
 from urllib.request import urlopen
 
@@ -14,10 +15,7 @@ from kivy.uix.recycleview import RecycleView
 from kivy.lang import Builder
 from kivymd.app import MDApp
 from kivy.uix.screenmanager import Screen,ScreenManager
-from kivymd.uix.list import OneLineAvatarListItem
-from kivymd.uix.button import MDFlatButton
-from kivymd.uix.label import MDLabel
-from kivy.loader import Loader
+
 
 
 if getattr(sys, "frozen", False):  # bundle mode with PyInstaller
@@ -25,9 +23,11 @@ if getattr(sys, "frozen", False):  # bundle mode with PyInstaller
 else:
     sys.path.append(os.path.abspath(__file__).split("demos")[0])
     os.environ["MYAPP_ROOT"] = os.path.dirname(os.path.abspath(__file__))
+    os.environ['SSL_CERT_FILE'] = certifi.where()
     os.environ["MYAPP_ASSETS"] = os.path.join(
         os.environ["MYAPP_ROOT"], f"assets{os.sep}")
     os.environ["KIVY_IMAGE"] = "pil"
+
 
 class RecView(RecycleView):
     def __init__(self, **kwargs):
@@ -38,6 +38,8 @@ class RecView(RecycleView):
         self.data = [{'text': self.values[x], 'source': self.pictures[x]} for x in range(len(self.values))]
 
 class SplashScreen(Screen):
+    stop = threading.Event()
+
     def __init__(self,**kwargs):
         super(SplashScreen, self).__init__(**kwargs)
         self.data = []
@@ -64,6 +66,9 @@ class SplashScreen(Screen):
         self.data = json.loads(json_url.read())
         print(self.data)
         for i in range(1, len(self.data)):
+            if self.stop.is_set():
+                # Stop running this thread so the main Python process can exit.
+                return
             url_image_path = os.path.join(self.url_image, self.data[i]['graphic'])
             file_image_path = os.path.join(os.environ["MYAPP_ROOT"], "temp", self.data[i]['graphic'])
             if not os.path.isfile(file_image_path):
@@ -113,6 +118,12 @@ class ViewPagerApp(MDApp):
         self.root.ids.splashscreen.load()
         pass
         # self.root.current = 'RecycleScreen'
+
+    def on_stop(self):
+        # The Kivy event loop is about to stop, set a stop signal;
+        # otherwise the app window will close, but the Python process will
+        # keep running until all secondary threads exit.
+        self.root.ids.splashscreen.stop.set()
 
 
 
