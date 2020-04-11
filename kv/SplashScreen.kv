@@ -1,0 +1,15 @@
+<SplashScreen>:
+    canvas.before:
+        Color:
+            rgba: 0,0,0,1
+        Rectangle:
+            # self here refers to the widget i.e BoxLayout
+            pos: self.pos
+            size: self.size
+
+    BoxLayout:
+        orientation: "vertical"
+        Image:
+            id: imageView
+            source: "./assets/load.gif"
+            allow_stretch: False
