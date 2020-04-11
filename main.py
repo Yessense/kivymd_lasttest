@@ -8,14 +8,16 @@ import certifi
 import urllib, json
 from urllib.request import urlopen
 
-from kivy.clock import Clock
+from kivy.clock import Clock, mainthread
+from kivy.core.text import Label
 from kivy.factory import Factory
 from kivy.animation import Animation
 from kivy.uix.recycleview import RecycleView
 from kivy.lang import Builder
 from kivymd.app import MDApp
 from kivy.uix.screenmanager import Screen,ScreenManager
-
+from kivy.uix.button import Button
+from kivymd.uix.list import OneLineAvatarIconListItem
 
 
 if getattr(sys, "frozen", False):  # bundle mode with PyInstaller
@@ -31,18 +33,18 @@ else:
 
 class RecView(RecycleView):
     def __init__(self, **kwargs):
-        self.values = kwargs.pop('values')
-        self.pictures = kwargs.pop('pictures')
+        self.values = kwargs.pop('values',None)
+        self.pictures = kwargs.pop('pictures',None)
         super(RecView, self).__init__(**kwargs)
-        print(self.pictures)
-        self.data = [{'text': self.values[x], 'source': self.pictures[x]} for x in range(len(self.values))]
+        self.data = [{'text': self.values[x], 'source': self.pictures[x] } for x in range(len(self.values))]
+
 
 class SplashScreen(Screen):
     stop = threading.Event()
-
     def __init__(self,**kwargs):
         super(SplashScreen, self).__init__(**kwargs)
         self.data = []
+
         self.pictures = []
         self.text = []
         self.url_data = "https://raw.githubusercontent.com/" \
@@ -57,6 +59,7 @@ class SplashScreen(Screen):
     def load(self):
         print("load started")
         x = threading.Thread(target=self.load_data_json)
+
         x.start()
 
         print("load ended")
@@ -71,18 +74,23 @@ class SplashScreen(Screen):
                 return
             url_image_path = os.path.join(self.url_image, self.data[i]['graphic'])
             file_image_path = os.path.join(os.environ["MYAPP_ROOT"], "temp", self.data[i]['graphic'])
-            if not os.path.isfile(file_image_path):
+            # self.pictures.append("./assets/No-image-available.png")
+            if os.path.isfile(file_image_path):
+                self.pictures.append(os.path.join("./temp", self.data[i]['graphic']))
+            else:
                 try:
                     urllib.request.urlretrieve(url_image_path, file_image_path)
-                    self.pictures.append(os.path.join("./temp", self.data[i]['graphic']))
+
                 except:
                     self.pictures.append("./assets/No-image-available.png")
-
             self.text.append(self.data[i]['name'])
             print(i)
+
         print("done")
-        # app = MDApp.get_running_app()
-        # app.root.screen
+        view = RecView(values=self.text,pictures=self.pictures)
+        self.parent.ids.recview.add_widget(view)
+        self.parent.current = 'RecycleScreen'
+
 
     def start_anim(self, *args):
         print("anim looped")
@@ -116,14 +124,24 @@ class ViewPagerApp(MDApp):
 
     def on_start(self):
         self.root.ids.splashscreen.load()
-        pass
-        # self.root.current = 'RecycleScreen'
+        print("ok")
+
+        #
+    #
+    # def make_rec_view(self,data,pictures):
+    #     print("hi")
+    #     view = RecView()
+    #     self.root.ids.recview.add_widget(view)
+    #     self.root.current = 'RecycleScreen'
+
+
 
     def on_stop(self):
         # The Kivy event loop is about to stop, set a stop signal;
         # otherwise the app window will close, but the Python process will
         # keep running until all secondary threads exit.
         self.root.ids.splashscreen.stop.set()
+
 
 
 
