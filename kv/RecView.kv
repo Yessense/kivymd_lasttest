@@ -2,11 +2,13 @@
      source: ''
      ImageLeftWidget:
           source : root.source
+          # Draw a background to indicate selection
+
 
 
 <RecView>:
      viewclass: 'MyOneLineAvatarListItem'
-     RecycleBoxLayout:
+     MyRecycleBoxLayout:
           default_size: None, dp(56)
           default_size_hint: 1, None
           size_hint_y: None

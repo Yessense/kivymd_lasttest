@@ -5,6 +5,29 @@ ScreenManager:
     Screen:
         id: recview
         name: 'RecycleScreen'
+    Screen:
+        id: tabscreen
+        name: 'TabScreen'
+        BoxLayout:
+            orientation: "vertical"
+            MDTabs:
+                id: tabs
+                on_tab_switch: app.on_tab_switch(*args)
+
+<Tab>:
+    id: tab
+    text:
+    path: ''
+    BoxLayout:
+        id: box
+        AnchorLayout:
+            id: anchor
+        MDLabel:
+            id: label
+            halign: "center"
+            text: tab.text
+            pos_hint: {"center_x": .5, "center_y": .5}
+
 
 
 
