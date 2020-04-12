@@ -17,6 +17,7 @@ ScreenManager:
 <Tab>:
     id: tab
     text:
+    desc: ''
     path: ''
     BoxLayout:
         id: box
@@ -25,7 +26,7 @@ ScreenManager:
         MDLabel:
             id: label
             halign: "center"
-            text: tab.text
+            text: tab.text + tab.desc
             pos_hint: {"center_x": .5, "center_y": .5}
 
 

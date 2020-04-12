@@ -80,7 +80,7 @@ class Tab(FloatLayout, MDTabsBase):
     '''Class implementing content for a tab.'''
 
 class SplashScreen(Screen):
-    stop = threading.Event()
+
     def __init__(self,**kwargs):
         super(SplashScreen, self).__init__(**kwargs)
         self.data = []
@@ -97,54 +97,6 @@ class SplashScreen(Screen):
                     "src/images/tech/"
         self.app = MDApp.get_running_app()
 
-    def load(self):
-        print("load started")
-        x = threading.Thread(target=self.load_data_json)
-
-        x.start()
-
-        print("load ended")
-    def load_data_json(self):
-        Clock.schedule_once(self.start_anim, 0)
-        json_url = urlopen(self.url_data)
-        self.data = json.loads(json_url.read())
-        print(self.data)
-        for i in range(1, len(self.data)):
-            if self.stop.is_set():
-                # Stop running this thread so the main Python process can exit.
-                return
-            url_image_path = os.path.join(self.url_image, self.data[i]['graphic'])
-            file_image_path = os.path.join(os.environ["MYAPP_ROOT"], "temp", self.data[i]['graphic'])
-            self.pictures.append("./assets/No-image-available.png")
-            # if os.path.isfile(file_image_path):
-            #     self.pictures.append(os.path.join("./temp", self.data[i]['graphic']))
-            # else:
-            #     try:
-            #         urllib.request.urlretrieve(url_image_path, file_image_path)
-            #
-            #     except:
-            #         self.pictures.append("./assets/No-image-available.png")
-            self.text.append(self.data[i]['name'])
-            print(i)
-
-        # self.app.pictures = self.pictures
-        # self.app.text = self.text
-        print("done")
-        view = RecView(values=self.text,pictures=self.pictures)
-        self.parent.ids.recview.add_widget(view)
-        self.parent.current = 'RecycleScreen'
-        self.get_tabs_ready()
-
-
-
-    def get_tabs_ready(self):
-        print(len(self.pictures))
-        print(len(self.text))
-        for i in range(len(self.text)):
-            tab = Tab(text=self.text[i])
-            tab.ids.anchor.add_widget(Image(source=self.pictures[i]))
-            self.app.root.ids.tabs.add_widget(tab)
-
 
     def start_anim(self, *args):
         print("anim looped")
@@ -159,25 +111,88 @@ class SplashScreen(Screen):
 
 
 class ViewPagerApp(MDApp):
+    stop = threading.Event()
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.theme_cls.primary_palette = "Teal"
 
         self.data = []
+
         self.pictures = []
+        self.text = []
+        self.decription = []
+
+        self.url_data = "https://raw.githubusercontent.com/" \
+                        "wesleywerner/ancient-tech/" \
+                        "02decf875616dd9692b31658d92e64a20d99f816/" \
+                        "src/data/techs.ruleset.json"
+        self.url_image = "https://raw.githubusercontent.com/" \
+                    "wesleywerner/ancient-tech/" \
+                    "02decf875616dd9692b31658d92e64a20d99f816/" \
+                    "src/images/tech/"
+
 
     def build(self):
         Builder.load_file(f"{os.environ['MYAPP_ROOT']}/kv/RecView.kv")
         Builder.load_file(f"{os.environ['MYAPP_ROOT']}/kv/SplashScreen.kv")
         return Builder.load_file(f"{os.environ['MYAPP_ROOT']}/kv/ViewPager.kv")
-
     def on_start(self):
-        self.root.ids.splashscreen.load()
+        self.load()
 
+    def load_data_json(self):
+        Clock.schedule_once(self.root.ids.splashscreen.start_anim, 0)
+        json_url = urlopen(self.url_data)
+        self.data = json.loads(json_url.read())
+        print(self.data)
+        for i in range(1, len(self.data)):
+            desc = ''
+            desc += self.data[i].get('helptext','')
+            desc += "Требование 1:" + self.data[i].get('req1',"Нет") + "\n"
+            desc += "Требование 2:" + self.data[i].get('req2', "Нет") + "\n"
+            self.decription.append(desc)
+            self.text.append(self.data[i]['name'])
+
+            if self.stop.is_set():
+                # Stop running this thread so the main Python process can exit.
+                return
+            url_image_path = os.path.join(self.url_image, self.data[i]['graphic'])
+            file_image_path = os.path.join(os.environ["MYAPP_ROOT"], "temp", self.data[i]['graphic'])
+            self.pictures.append("./assets/No-image-available.png")
+            # if os.path.isfile(file_image_path):
+            #     self.pictures.append(os.path.join("./temp", self.data[i]['graphic']))
+            # else:
+            #     try:
+            #         urllib.request.urlretrieve(url_image_path, file_image_path)
+            #
+            #     except:
+            #         self.pictures.append("./assets/No-image-available.png")
+
+
+            print(i)
+
+        # self.app.pictures = self.pictures
+        # self.app.text = self.text
+        print("done")
+        view = RecView(values=self.text,pictures=self.pictures)
+        self.root.ids.recview.add_widget(view)
+        self.root.current = 'RecycleScreen'
+        self.get_tabs_ready()
+    def get_tabs_ready(self):
+        print(len(self.pictures))
+        print(len(self.text))
+        for i in range(len(self.text)):
+            tab = Tab(text=self.text[i])
+            tab.desc = "\n" + self.decription[i]
+            tab.ids.anchor.add_widget(Image(source=self.pictures[i]))
+            self.root.ids.tabs.add_widget(tab)
+    def load(self):
+        print("load started")
+        threading.Thread(target=self.load_data_json).start()
     def on_tab_switch(
                 self, instance_tabs, instance_tab, instance_tab_label, tab_text
         ):
-        instance_tab.ids.label.text = tab_text
+        instance_tab.ids.label.text = tab_text + instance_tab.desc
+
 
 
     def on_stop(self):
