@@ -1,34 +1,29 @@
+import json
 import os
 import sys
 import threading
 import certifi
 
-
-
-import urllib, json
 from urllib.request import urlopen
 
-from kivy.clock import Clock, mainthread
-from kivy.core.text import Label
-from kivy.factory import Factory
 from kivy.animation import Animation
-from kivy.properties import BooleanProperty, StringProperty
+from kivy.clock import Clock
+from kivy.factory import Factory
+from kivy.lang import Builder
+from kivy.properties import BooleanProperty
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.image import Image
+from kivy.uix.image import AsyncImage
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recycleview import RecycleView
-from kivy.lang import Builder
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
+from kivy.uix.screenmanager import Screen
 from kivymd.app import MDApp
-from kivy.uix.screenmanager import Screen,ScreenManager
-from kivy.uix.button import Button
-from kivymd.uix.list import  OneLineAvatarListItem
-from kivymd.uix.tab import MDTabsBase
+from kivymd.uix.list import OneLineAvatarListItem, ILeftBody
+from kivymd.uix.tab import MDTabsBase, MDTabs
 
-
-if getattr(sys, "frozen", False):  # bundle mode with PyInstaller
+if getattr(sys, "frozen", False):
     os.environ["MYAPP_ROOT"] = sys._MEIPASS
 else:
     sys.path.append(os.path.abspath(__file__).split("demos")[0])
@@ -38,18 +33,25 @@ else:
         os.environ["MYAPP_ROOT"], f"assets{os.sep}")
     os.environ["KIVY_IMAGE"] = "pil"
 
-class MyRecycleBoxLayout(RecycleBoxLayout,FocusBehavior, LayoutSelectionBehavior):
+
+class MyImageLeft(ILeftBody, AsyncImage):
     pass
+
+
+class MyRecycleBoxLayout(RecycleBoxLayout, FocusBehavior, LayoutSelectionBehavior):
+    pass
+
 
 class RecView(RecycleView):
     def __init__(self, **kwargs):
-        self.values = kwargs.pop('values',None)
-        self.pictures = kwargs.pop('pictures',None)
+        self.values = kwargs.pop('values', None)
+        self.pictures = kwargs.pop('pictures', None)
         super(RecView, self).__init__(**kwargs)
-        self.data = [{'text': self.values[x], 'source': self.pictures[x] } for x in range(len(self.values))]
+        self.data = [{'text': self.values[x], 'path': self.pictures[x]} for x in range(len(self.values))]
 
-class MyOneLineAvatarListItem(OneLineAvatarListItem,RecycleDataViewBehavior):
-    ''' Add selection support to the Label '''
+
+class MyOneLineAvatarListItem(OneLineAvatarListItem, RecycleDataViewBehavior):
+    """ Add selection support to the Label """
     index = None
     selected = BooleanProperty(False)
     selectable = BooleanProperty(True)
@@ -68,20 +70,23 @@ class MyOneLineAvatarListItem(OneLineAvatarListItem,RecycleDataViewBehavior):
             return self.parent.select_with_touch(self.index, touch)
 
     def apply_selection(self, rv, index, is_selected):
-        ''' Respond to the selection of items in the view. '''
+        """ Respond to the selection of items in the view. """
         self.selected = is_selected
         if is_selected:
             print("selection changed to {0}".format(rv.data[index]))
             print(rv.data[index]['text'])
             app = MDApp.get_running_app()
-            app.root.current = "TabScreen"
+            app.show_tab_screen(index)
+
 
 class Tab(FloatLayout, MDTabsBase):
     '''Class implementing content for a tab.'''
+    pass
+
 
 class SplashScreen(Screen):
 
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
         super(SplashScreen, self).__init__(**kwargs)
         self.data = []
 
@@ -92,11 +97,10 @@ class SplashScreen(Screen):
                         "02decf875616dd9692b31658d92e64a20d99f816/" \
                         "src/data/techs.ruleset.json"
         self.url_image = "https://raw.githubusercontent.com/" \
-                    "wesleywerner/ancient-tech/" \
-                    "02decf875616dd9692b31658d92e64a20d99f816/" \
-                    "src/images/tech/"
+                         "wesleywerner/ancient-tech/" \
+                         "02decf875616dd9692b31658d92e64a20d99f816/" \
+                         "src/images/tech/"
         self.app = MDApp.get_running_app()
-
 
     def start_anim(self, *args):
         print("anim looped")
@@ -111,7 +115,6 @@ class SplashScreen(Screen):
 
 
 class ViewPagerApp(MDApp):
-    stop = threading.Event()
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.theme_cls.primary_palette = "Teal"
@@ -127,15 +130,15 @@ class ViewPagerApp(MDApp):
                         "02decf875616dd9692b31658d92e64a20d99f816/" \
                         "src/data/techs.ruleset.json"
         self.url_image = "https://raw.githubusercontent.com/" \
-                    "wesleywerner/ancient-tech/" \
-                    "02decf875616dd9692b31658d92e64a20d99f816/" \
-                    "src/images/tech/"
-
+                         "wesleywerner/ancient-tech/" \
+                         "02decf875616dd9692b31658d92e64a20d99f816/" \
+                         "src/images/tech/"
 
     def build(self):
         Builder.load_file(f"{os.environ['MYAPP_ROOT']}/kv/RecView.kv")
         Builder.load_file(f"{os.environ['MYAPP_ROOT']}/kv/SplashScreen.kv")
         return Builder.load_file(f"{os.environ['MYAPP_ROOT']}/kv/ViewPager.kv")
+
     def on_start(self):
         self.load()
 
@@ -146,60 +149,35 @@ class ViewPagerApp(MDApp):
         print(self.data)
         for i in range(1, len(self.data)):
             desc = ''
-            desc += self.data[i].get('helptext','')
-            desc += "Требование 1:" + self.data[i].get('req1',"Нет") + "\n"
-            desc += "Требование 2:" + self.data[i].get('req2', "Нет") + "\n"
+            desc += "Требование 1: " + self.data[i].get('req1', "Нет") + "\n"
+            desc += "Требование 2: " + self.data[i].get('req2', "Нет") + "\n"
+            desc += "Подсказка: " + self.data[i].get('helptext', '')
             self.decription.append(desc)
             self.text.append(self.data[i]['name'])
-
-            if self.stop.is_set():
-                # Stop running this thread so the main Python process can exit.
-                return
             url_image_path = os.path.join(self.url_image, self.data[i]['graphic'])
-            file_image_path = os.path.join(os.environ["MYAPP_ROOT"], "temp", self.data[i]['graphic'])
-            self.pictures.append("./assets/No-image-available.png")
-            # if os.path.isfile(file_image_path):
-            #     self.pictures.append(os.path.join("./temp", self.data[i]['graphic']))
-            # else:
-            #     try:
-            #         urllib.request.urlretrieve(url_image_path, file_image_path)
-            #
-            #     except:
-            #         self.pictures.append("./assets/No-image-available.png")
+            self.pictures.append(url_image_path)
+        self.create_recycle_view()
 
-
-            print(i)
-
-        # self.app.pictures = self.pictures
-        # self.app.text = self.text
-        print("done")
-        view = RecView(values=self.text,pictures=self.pictures)
+    def create_recycle_view(self):
+        view = RecView(values=self.text, pictures=self.pictures)
         self.root.ids.recview.add_widget(view)
         self.root.current = 'RecycleScreen'
-        self.get_tabs_ready()
-    def get_tabs_ready(self):
-        print(len(self.pictures))
-        print(len(self.text))
+
+    def show_tab_screen(self, index):
+        tabs = MDTabs()
+        tabs.default_tab = index
         for i in range(len(self.text)):
             tab = Tab(text=self.text[i])
             tab.desc = "\n" + self.decription[i]
-            tab.ids.anchor.add_widget(Image(source=self.pictures[i]))
-            self.root.ids.tabs.add_widget(tab)
+            tab.ids.anchor.add_widget(AsyncImage(source=self.pictures[i]))
+            tabs.add_widget(tab)
+
+        self.root.ids.boxtabs.add_widget(tabs)
+        self.root.current = "TabScreen"
+
     def load(self):
         print("load started")
         threading.Thread(target=self.load_data_json).start()
-    def on_tab_switch(
-                self, instance_tabs, instance_tab, instance_tab_label, tab_text
-        ):
-        instance_tab.ids.label.text = tab_text + instance_tab.desc
-
-
-
-    def on_stop(self):
-        # The Kivy event loop is about to stop, set a stop signal;
-        # otherwise the app window will close, but the Python process will
-        # keep running until all secondary threads exit.
-        self.root.ids.splashscreen.stop.set()
 
 
 ViewPagerApp().run()

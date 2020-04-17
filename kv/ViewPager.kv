@@ -9,10 +9,9 @@ ScreenManager:
         id: tabscreen
         name: 'TabScreen'
         BoxLayout:
+            id: boxtabs
             orientation: "vertical"
-            MDTabs:
-                id: tabs
-                on_tab_switch: app.on_tab_switch(*args)
+
 
 <Tab>:
     id: tab
@@ -25,7 +24,7 @@ ScreenManager:
             id: anchor
         MDLabel:
             id: label
-            halign: "center"
+            halign: "left"
             text: tab.text + tab.desc
             pos_hint: {"center_x": .5, "center_y": .5}
 
